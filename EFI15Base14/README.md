@@ -15,7 +15,7 @@ Install HeliPort in macOS to connect with `itlwm`. HeliPort is an app and is not
 
 ## USB status
 
-This EFI still contains the previous `USBInjectAll.kext` setup. A machine-specific USB port map has not been confirmed for this M920q. Validate all ports, sleep/wake, and Bluetooth before relying on this EFI as a daily configuration.
+This EFI still contains the previous `USBInjectAll.kext` setup. `reference/MyM920Q/DxDiag.txt` identifies the Intel USB controller (`8086:A36D`) and shows Windows locations for devices attached during that report, including ports 7 and 8. That is useful topology evidence, but it does not enumerate every physical port or establish the macOS HS/SS port mapping. A complete machine-specific map has therefore not been confirmed. Validate every port, sleep/wake, and Bluetooth before relying on this EFI as a daily configuration.
 
 ## Before use
 
