@@ -26,11 +26,75 @@ This folder is a Sequoia 15 candidate based on the EFI that previously booted on
 - **Wi-Fi:** Install HeliPort in macOS to connect with `itlwm`. Intel AC 7260 has community reports of intermittent disconnects on Sequoia, so keep Ethernet available during installation and initial testing.
 - **Bluetooth:** Handled by `IntelBluetoothFirmware.kext`, `IntelBTPatcher.kext`, and `BlueToolFixup.kext` with the `-btlfxallowanyaddr` boot-arg.
 
-## USB Mapping & Status
+## USB Architecture & Official Lenovo Hardware Documentation
 
-Previously, this candidate relied on `USBInjectAll.kext` and `XHCI-unsupported.kext`. Since **macOS Big Sur 11.3+ through macOS 15 Sequoia**, `USBInjectAll.kext` and the `XhciPortLimit` quirk are completely deprecated/broken by Apple's updated USB stack, leading directly to the `Still waiting for root device` error (prohibitory sign `🚫`) during boot because macOS drops the USB installer drive.
+### Official Lenovo ThinkCentre M920q Tiny USB Port Layout
 
-This EFI now uses **`USBToolBox.kext` (1.2.0)** paired with **`UTBMap.kext`**, custom-mapped for the Lenovo ThinkCentre M720q / M920q:
+According to the official **Lenovo PSREF (Product Specifications Reference)** and **Hardware Maintenance Manual**, the ThinkCentre M920q Tiny **does not possess any physical legacy USB 2.0 ports**. All exterior ports are modern USB 3.1:
+
+#### Front Panel:
+```text
++-----------------------------------------------------------+
+| [Power Button]  [Storage LED]  [Mic]  [Headphone Combo]   |
+| [USB 3.1 Gen 1 Type-A (Always On)]   [USB-C 3.1 Gen 1]    |
++-----------------------------------------------------------+
+```
+- **1x USB 3.1 Gen 1 Type-A** (5 Gbps, supports Yellow/Always-On rapid charging)
+- **1x USB-C 3.1 Gen 1** (5 Gbps)
+- **2x Audio Jacks** (1x 3.5mm microphone, 1x 3.5mm combo headphone/mic)
+
+#### Rear Panel:
+```text
++---------------------------------------------------------------------------------+
+| [Power Input]     [USB 3.1 Gen 2 (10G)]   [DisplayPort]   [Ethernet RJ-45]      |
+| [Opt. Punch-out*] [USB 3.1 Gen 1 (5G) ]   [HDMI Out   ]   [USB 3.1 Gen 1 (5G)]  |
++---------------------------------------------------------------------------------+
+*(Note: An additional 2nd USB 3.1 Gen 2 port is located on the rear depending on model layout).*
+```
+- **2x USB 3.1 Gen 1 Type-A** (5 Gbps)
+- **2x USB 3.1 Gen 2 Type-A** (10 Gbps)
+- **1x DisplayPort Out** & **1x HDMI Out**
+- **1x Gigabit Ethernet (RJ-45)**: Intel I219-LM
+- **1x Optional Punch-out Slot**: May house optional serial port, 2nd DP, 2nd HDMI, USB-C DP, or PCIe card.
+
+### How USB 2.0 (HS) vs USB 3.0 (SS) Operates on These Ports
+
+Even though all physical ports are USB 3.1 (5G/10G), **every USB 3.x Type-A and Type-C port incorporates two separate logical lines inside the Intel Q370 xHCI controller**:
+1. **HighSpeed (HS - USB 2.0 logic):** Uses standard 4-pin connections (`VBUS`, `D-`, `D+`, `GND`). When you plug in a mouse, keyboard, or a **USB 2.0 flash drive** (black/white connector with 4 pins) into *any* port, only the HS logic is activated.
+2. **SuperSpeed (SS - USB 3.0/3.1 logic):** Uses 5 additional deep pins (`SSTX+`, `SSTX-`, `SSRX+`, `SSRX-`, `GND_DRAIN`). When plugging in a USB 3.0/3.1 drive (blue/teal connector), the controller negotiates over the SS line.
+
+---
+
+## Detailed Root Cause Analysis: Sonoma vs Sequoia Boot Failure
+
+### The Problem
+During macOS Sequoia installation from a USB installer, the verbose log reached `DSMOS has arrived`, followed by:
+- A prohibitory circle-with-slash symbol `🚫` (`support.apple.com/mac/startup`)
+- Screen corruption and the kernel halt message: **`Still waiting for root device`**
+
+### Why Did the Previous Sonoma Config Boot While Sequoia Failed?
+
+Reviewing the working reference backup (`reference/Working-But-Not-Sure-Best-Config-Sonoma-14.4-M920Q`) revealed the exact technical discrepancies:
+
+1. **`XhciPortLimit` Difference (`True` vs `False`):**
+   - In the **Sonoma reference config**, `Kernel -> Quirks -> XhciPortLimit` was set to **`True`** along with `USBInjectAll.kext` (v0.8.0).
+   - In the **initial Sequoia candidate**, `XhciPortLimit` was toggled to **`False`** (following OpenCore general guidelines).
+   - **The Conflict:** Intel Coffee Lake Q370 has **26 logical ports** (HS01–HS14, SS01–SS10, USR1–USR2). When using `USBInjectAll` with `XhciPortLimit = False`, macOS enforces its strict **15-port maximum per controller**. Because macOS enumerates HS ports first, ports 1 through 14 were filled exclusively by USB 2.0 (HS) lines. **All SuperSpeed USB 3.0 lines (SS01–SS10, starting at index 16+) were completely dropped.** The moment the macOS kernel initialized its USB driver (`AppleUSBXHCIPCI`), the USB 3.0 installer drive lost its connection, producing `Still waiting for root device`.
+
+2. **Booting From Internal NVMe vs Booting From USB Installer:**
+   - The Sonoma reference EFI was used on an **already installed system booting directly from internal NVMe SSD (`WD PC SN520`)** via PCIe.
+   - An internal NVMe drive communicates via `IONVMeFamily` and does not depend on USB controller handoff. Even with broken or unmapped USB ports, macOS still boots directly to Desktop.
+   - A **macOS USB Installer**, however, relies 100% on the USB flash drive being readable throughout the entire boot sequence. If the USB port drops during controller handoff, the installer crashes immediately.
+
+3. **Apple USB Stack Tightening in macOS 15 Sequoia:**
+   - Apple significantly overhauled `AppleUSBXHCIPCI` starting with macOS 11.3 Big Sur, and continuing aggressively through Monterey, Ventura, Sonoma, and Sequoia.
+   - Legacy shims and RehabMan's old `USBInjectAll.kext` can no longer reliably inject port definitions or bypass controller boundaries without native port mapping.
+
+---
+
+## The Solution: Native Mapping with USBToolBox + UTBMap
+
+To permanently eliminate USB dropping and kernel stalls, `USBInjectAll.kext` and `XHCI-unsupported.kext` have been disabled, replaced by **`USBToolBox.kext` (1.2.0)** and **`UTBMap.kext` (1.1)** tailored specifically for the M720q / M920q topology:
 
 | Port | Type / Connector | Description |
 |---|---|---|
@@ -42,13 +106,11 @@ This EFI now uses **`USBToolBox.kext` (1.2.0)** paired with **`UTBMap.kext`**, c
 | **HS06 / SS06** | USB 3.0 Type-A (`UsbConnector=3`) | Rear USB port 4 |
 | **HS07** | Internal (`UsbConnector=255`) | Internal Bluetooth header (`8087:07dc`) |
 
-*Total mapped ports: 13 ports (comfortably under macOS's 15-port-per-controller limit).*
+*Total mapped ports: **13 logical ports** (safely below Apple's 15-port limit).*
 
-### Troubleshooting: "Still waiting for root device" (Prohibited Sign 🚫)
-If you encounter a prohibitory sign `🚫` (`support.apple.com/mac/startup`) or the verbose message `Still waiting for root device`:
-1. **Use Rear USB Ports:** Always plug the installer drive into a **rear USB 3.0 port** on the back of the machine (preferably near the Intel LAN port). Avoid front USB or Type-C ports during the installation phase.
-2. **USB 2.0 Fallback:** If your USB drive controller continues to reset, insert it into a USB 2.0 port / USB 2.0 extension hub, or burn the installer to a USB 2.0 flash drive.
-3. **Verify UTBMap:** Ensure `USBToolBox.kext` and `UTBMap.kext` are both enabled in `config.plist`, and `USBInjectAll.kext` / `XHCI-unsupported.kext` remain disabled.
+### Practical Advice When Booting Installer:
+- **Plug into Rear Ports:** Always use a rear USB port (preferably the bottom port adjacent to the Intel RJ-45 Ethernet port) for the installer.
+- **USB 2.0 Flash Drive / Hub Tip:** If using an unmapped EFI or encountering issues, plugging through a USB 2.0 extension cable, USB 2.0 hub, or using a USB 2.0 flash drive forces the port to connect via the HS line, bypassing any USB 3.0 SuperSpeed link negotiation drops.
 
 ## BIOS Settings (Lenovo ThinkCentre M920q)
 
