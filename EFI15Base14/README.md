@@ -29,6 +29,33 @@ This folder is a Sequoia 15 candidate based on the EFI that previously booted on
 
 This EFI still contains the previous `USBInjectAll.kext` setup. `reference/MyM920Q/DxDiag.txt` identifies the Intel USB controller (`8086:A36D`) and shows Windows locations for devices attached during that report, including ports 7 and 8. That is useful topology evidence, but it does not enumerate every physical port or establish the macOS HS/SS port mapping. A complete machine-specific map has therefore not been confirmed. Validate every port, sleep/wake, and Bluetooth before relying on this EFI as a daily configuration. When booting the installer, use the USB ports on the back of the machine.
 
+## BIOS Settings (Lenovo ThinkCentre M920q)
+
+Press `F1` on boot to enter BIOS Setup. Configure the following:
+
+### Disable:
+- **Security -> Secure Boot:** `Disabled` *(Critical: prevents OpenCore boot)*
+- **Devices -> Serial Port:** `Disabled`
+- **Devices -> USB Setup -> USB Legacy Support:** `Disabled`
+- **Startup -> CSM (Compatibility Support Module):** `Disabled` *(UEFI only)*
+- **Security -> Intel SGX:** `Disabled`
+- **Power -> Hard-disk Pre Delay:** `Disabled`
+
+### Enable:
+- **Devices -> ATA Drive Setup -> Configure SATA as:** `AHCI`
+- **Devices -> Video Setup:**
+  - **Active Video:** `IGD` (Intel Onboard)
+  - **Pre-Allocated Memory (DVMT):** `64MB` (or 32MB minimum)
+  - **Total Graphics Memory:** `MAX`
+- **Devices -> USB Setup:**
+  - **USB Support:** `Enabled`
+  - **Front USB Ports / Rear USB Ports:** `Enabled`
+- **Advanced / CPU Setup:**
+  - **Intel (VMX) Virtualization:** `Enabled`
+  - **VT-d:** `Enabled` *(handled safely by OpenCore)*
+  - **Hyper-Threading:** `Enabled`
+  - **CFG Lock (if visible):** `Disabled` *(Note: `AppleXcpmCfgLock=True` is enabled in OpenCore as fallback)*
+
 ## Before use
 
 - Keep the known-working Sonoma EFI unchanged and use a separate USB EFI for testing.
