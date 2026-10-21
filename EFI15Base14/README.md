@@ -62,6 +62,56 @@ Press `F1` on boot to enter BIOS Setup. Configure the following:
 - Confirm the system's CPU and BIOS settings before changing ACPI or CFG Lock settings.
 - Do not share this config publicly without replacing its SMBIOS serial, MLB, and UUID with your own values.
 
+## Step-by-Step macOS Sequoia Installation Guide
+
+Follow these steps once you plug the installer USB into a **rear USB port** of the ThinkCentre M920q:
+
+### 1. Booting the USB Installer
+1. Plug your USB into a **rear USB 3.0 port** (avoid front Type-C or front USB ports for initial boot).
+2. Connect your display via **DisplayPort** (recommended) or HDMI.
+3. Plug in an Ethernet cable (Intel LAN) for internet access during installation.
+4. Power on the machine and immediately press **`F12`** repeatedly to bring up the Lenovo Boot Menu.
+5. Select your USB drive (marked as `UEFI: SanDisk...`).
+6. At the OpenCore boot picker menu:
+   - Select **`Install macOS Sequoia (external)`** and press `Enter`.
+   - The screen will show verbose scrolling text (`-v`). Wait 1–3 minutes until the macOS Recovery / Installer screen appears.
+
+### 2. Formatting the Drive (Disk Utility)
+1. On the macOS Recovery screen, select **Disk Utility** -> Click **Continue**.
+2. In the top-left menu bar, click **View** -> select **Show All Devices** (`Cmd + 2`).
+3. Under the *Internal* section on the left sidebar:
+   - Select the main NVMe drive (e.g. `WDC PC SN520...` parent disk, or select the specific partition you wish to install on).
+4. Click **Erase** at the top:
+   - **Name:** `Macintosh HD` (or any name you prefer)
+   - **Format:** `APFS`
+   - **Scheme:** `GUID Partition Map`
+5. Click **Erase** and wait for it to complete, then close Disk Utility (`Cmd + Q`).
+
+### 3. Running the Installer
+1. Back on the Recovery menu, select **Install macOS Sequoia** -> Click **Continue**.
+2. Agree to the Apple software license terms.
+3. Choose the target disk you just formatted (`Macintosh HD`) -> Click **Continue**.
+4. The initial installer copy phase will take about 15–25 minutes.
+
+### 4. Automatic Reboots (Crucial Step!)
+The machine will restart 2–4 times during the installation.
+- Leave the USB plugged in.
+- Each time the machine reboots, OpenCore should automatically pick the next boot stage. If the menu appears:
+  - **Reboot 1 & 2:** Select **`macOS Installer`** (from Macintosh HD).
+  - **Final Reboot:** Select **`Macintosh HD`**.
+- *Note:* Do not select `Install macOS Sequoia (external)` again after the first phase, otherwise it will restart the setup from the beginning!
+
+### 5. First Boot & Setup Assistant
+1. When setup finishes, you will see the macOS Welcome / Country selection screen.
+2. Follow the on-screen prompts to create your local user account.
+3. *Recommendation during setup:* Select "My computer does not connect to the Internet" or skip Apple ID sign-in initially until you're at the Desktop.
+
+### 6. Post-Installation (Mounting EFI to Internal NVMe)
+Once on the macOS Desktop:
+1. Copy the `EFI` folder from your USB to the internal NVMe EFI partition using **MountEFI** or **OCAT** (located in `Hackintosh_M920Q/04_EFI_Backups/Working/`).
+2. Install **HeliPort.app** (from the same folder) into `/Applications` to connect to Wi-Fi networks using `itlwm.kext`.
+3. Unplug the USB and reboot to confirm the machine boots independently from the internal SSD.
+
 ## Component versions
 
 - OpenCore: 1.0.8
