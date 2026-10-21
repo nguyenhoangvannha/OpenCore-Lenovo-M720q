@@ -626,7 +626,7 @@
 				<key>MaxKernel</key>
 				<string></string>
 				<key>MinKernel</key>
-				<string></string>
+				<string>21.0.0</string>
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
@@ -901,7 +901,7 @@
 				AAAAAAAAAAAAAAAAAAA=
 				</data>
 				<key>boot-args</key>
-				<string>-v igfxonln=1 alcid=13 watchdog=0 agdpmod=vit9696 -wegnoegpu igfxagdc=0 keepsyms=1 swd_panic=1</string>
+				<string>-v igfxonln=1 alcid=13 watchdog=0 agdpmod=vit9696 -wegnoegpu igfxagdc=0 keepsyms=1 swd_panic=1 -btlfxallowanyaddr</string>
 				<key>csr-active-config</key>
 				<data>
 				7w8AAA==

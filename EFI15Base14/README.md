@@ -8,14 +8,26 @@ This folder is a Sequoia 15 candidate based on the EFI that previously booted on
 - Updates OpenCore to 1.0.8 and refreshes the core kexts.
 - Enables `itlwm.kext` 2.3.0 and disables the Sonoma-targeted `AirportItlwm.kext`.
 - Sets `XhciPortLimit` to `false`.
+- Configures `BlueToolFixup.kext` with `MinKernel=21.0.0` and adds `-btlfxallowanyaddr` to boot-args for macOS 15 Sequoia Bluetooth compatibility.
 
-## Wi-Fi
+## Hardware Confirmed (This Device)
 
-Install HeliPort in macOS to connect with `itlwm`. HeliPort is an app and is not part of this EFI. Intel AC 7260 has community reports of intermittent disconnects on Sequoia, so keep Ethernet available during installation and initial testing.
+- **System:** Lenovo ThinkCentre M920q Tiny (Q370 Chipset)
+- **CPU:** Intel Core Gen 8 Coffee Lake (ES `0000 @ 1.60GHz`)
+- **iGPU:** Intel UHD Graphics 630 (`[8086:3e92]`)
+- **Audio:** Realtek ALC233 (`alcid=13`)
+- **LAN:** Intel Ethernet Connection I219-LM (`[8086:15bb]`)
+- **Wi-Fi / BT:** Intel Dual Band Wireless-AC 7260 (`[8086:08b2]`, BT `8087:07dc`)
+- **Storage:** WD PC SN520 512GB NVMe
+
+## Wi-Fi & Bluetooth
+
+- **Wi-Fi:** Install HeliPort in macOS to connect with `itlwm`. Intel AC 7260 has community reports of intermittent disconnects on Sequoia, so keep Ethernet available during installation and initial testing.
+- **Bluetooth:** Handled by `IntelBluetoothFirmware.kext`, `IntelBTPatcher.kext`, and `BlueToolFixup.kext` with the `-btlfxallowanyaddr` boot-arg.
 
 ## USB status
 
-This EFI still contains the previous `USBInjectAll.kext` setup. `reference/MyM920Q/DxDiag.txt` identifies the Intel USB controller (`8086:A36D`) and shows Windows locations for devices attached during that report, including ports 7 and 8. That is useful topology evidence, but it does not enumerate every physical port or establish the macOS HS/SS port mapping. A complete machine-specific map has therefore not been confirmed. Validate every port, sleep/wake, and Bluetooth before relying on this EFI as a daily configuration.
+This EFI still contains the previous `USBInjectAll.kext` setup. `reference/MyM920Q/DxDiag.txt` identifies the Intel USB controller (`8086:A36D`) and shows Windows locations for devices attached during that report, including ports 7 and 8. That is useful topology evidence, but it does not enumerate every physical port or establish the macOS HS/SS port mapping. A complete machine-specific map has therefore not been confirmed. Validate every port, sleep/wake, and Bluetooth before relying on this EFI as a daily configuration. When booting the installer, use the USB ports on the back of the machine.
 
 ## Before use
 
@@ -36,3 +48,4 @@ This EFI still contains the previous `USBInjectAll.kext` setup. `reference/MyM92
 - IntelBluetoothFirmware, IntelBTPatcher: 2.4.0
 - BlueToolFixup: 2.7.2
 - itlwm: 2.3.0
+
