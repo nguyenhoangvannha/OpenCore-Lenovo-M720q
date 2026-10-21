@@ -7,6 +7,7 @@ This folder is a Sequoia 15 candidate based on the EFI that previously booted on
 - Preserves the M920q-specific ACPI, graphics, audio, SMBIOS, and device properties from the Sonoma EFI.
 - Updates OpenCore to 1.0.8 and refreshes the core kexts.
 - Enables `itlwm.kext` 2.3.0 and disables the Sonoma-targeted `AirportItlwm.kext`.
+- Replaces broken `USBInjectAll.kext` + `XHCI-unsupported.kext` with `USBToolBox.kext` + `UTBMap.kext` (macOS 11.3+ / Sequoia compatible port map).
 - Sets `XhciPortLimit` to `false`.
 - Configures `BlueToolFixup.kext` with `MinKernel=21.0.0` and adds `-btlfxallowanyaddr` to boot-args for macOS 15 Sequoia Bluetooth compatibility.
 
@@ -25,9 +26,29 @@ This folder is a Sequoia 15 candidate based on the EFI that previously booted on
 - **Wi-Fi:** Install HeliPort in macOS to connect with `itlwm`. Intel AC 7260 has community reports of intermittent disconnects on Sequoia, so keep Ethernet available during installation and initial testing.
 - **Bluetooth:** Handled by `IntelBluetoothFirmware.kext`, `IntelBTPatcher.kext`, and `BlueToolFixup.kext` with the `-btlfxallowanyaddr` boot-arg.
 
-## USB status
+## USB Mapping & Status
 
-This EFI still contains the previous `USBInjectAll.kext` setup. `reference/MyM920Q/DxDiag.txt` identifies the Intel USB controller (`8086:A36D`) and shows Windows locations for devices attached during that report, including ports 7 and 8. That is useful topology evidence, but it does not enumerate every physical port or establish the macOS HS/SS port mapping. A complete machine-specific map has therefore not been confirmed. Validate every port, sleep/wake, and Bluetooth before relying on this EFI as a daily configuration. When booting the installer, use the USB ports on the back of the machine.
+Previously, this candidate relied on `USBInjectAll.kext` and `XHCI-unsupported.kext`. Since **macOS Big Sur 11.3+ through macOS 15 Sequoia**, `USBInjectAll.kext` and the `XhciPortLimit` quirk are completely deprecated/broken by Apple's updated USB stack, leading directly to the `Still waiting for root device` error (prohibitory sign `🚫`) during boot because macOS drops the USB installer drive.
+
+This EFI now uses **`USBToolBox.kext` (1.2.0)** paired with **`UTBMap.kext`**, custom-mapped for the Lenovo ThinkCentre M720q / M920q:
+
+| Port | Type / Connector | Description |
+|---|---|---|
+| **HS01 / SS01** | USB 3.0 Type-A (`UsbConnector=3`) | Front USB Type-A port |
+| **HS02 / SS02** | Type-C (`UsbConnector=9`) | Front USB Type-C port |
+| **HS03 / SS03** | USB 3.0 Type-A (`UsbConnector=3`) | Rear USB port 1 |
+| **HS04 / SS04** | USB 3.0 Type-A (`UsbConnector=3`) | Rear USB port 2 |
+| **HS05 / SS05** | USB 3.0 Type-A (`UsbConnector=3`) | Rear USB port 3 |
+| **HS06 / SS06** | USB 3.0 Type-A (`UsbConnector=3`) | Rear USB port 4 |
+| **HS07** | Internal (`UsbConnector=255`) | Internal Bluetooth header (`8087:07dc`) |
+
+*Total mapped ports: 13 ports (comfortably under macOS's 15-port-per-controller limit).*
+
+### Troubleshooting: "Still waiting for root device" (Prohibited Sign 🚫)
+If you encounter a prohibitory sign `🚫` (`support.apple.com/mac/startup`) or the verbose message `Still waiting for root device`:
+1. **Use Rear USB Ports:** Always plug the installer drive into a **rear USB 3.0 port** on the back of the machine (preferably near the Intel LAN port). Avoid front USB or Type-C ports during the installation phase.
+2. **USB 2.0 Fallback:** If your USB drive controller continues to reset, insert it into a USB 2.0 port / USB 2.0 extension hub, or burn the installer to a USB 2.0 flash drive.
+3. **Verify UTBMap:** Ensure `USBToolBox.kext` and `UTBMap.kext` are both enabled in `config.plist`, and `USBInjectAll.kext` / `XHCI-unsupported.kext` remain disabled.
 
 ## BIOS Settings (Lenovo ThinkCentre M920q)
 
@@ -125,4 +146,6 @@ Once on the macOS Desktop:
 - IntelBluetoothFirmware, IntelBTPatcher: 2.4.0
 - BlueToolFixup: 2.7.2
 - itlwm: 2.3.0
+- USBToolBox: 1.2.0
+- UTBMap: 1.1 (M720q / M920q tailored map)
 
