@@ -1,8 +1,12 @@
 package com.lenovo.m720q.efitool
 
+import android.net.Uri
 import android.os.Bundle
+import android.provider.DocumentsContract
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +41,22 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+fun resolveFolderPathFromUri(uri: Uri): String {
+    return try {
+        val docId = DocumentsContract.getTreeDocumentId(uri)
+        val parts = docId.split(":")
+        val type = parts[0]
+        val relativePath = if (parts.size > 1) parts[1] else ""
+        if ("primary".equals(type, ignoreCase = true)) {
+            if (relativePath.isNotBlank()) "/storage/emulated/0/$relativePath" else "/storage/emulated/0"
+        } else {
+            if (relativePath.isNotBlank()) "/storage/$type/$relativePath" else "/storage/$type"
+        }
+    } catch (e: Exception) {
+        uri.path ?: "/sdcard/Download/EFI"
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EfiToolScreen() {
@@ -48,6 +69,8 @@ fun EfiToolScreen() {
 
     var detectedPartitions by remember { mutableStateOf<List<UsbPartition>>(emptyList()) }
     var selectedPartition by remember { mutableStateOf("/dev/block/sda1") }
+    var isPartitionDropdownExpanded by remember { mutableStateOf(false) }
+
     var sourceEfiPath by remember { mutableStateOf("/sdcard/Download/EFI") }
 
     var isProcessing by remember { mutableStateOf(false) }
@@ -55,6 +78,17 @@ fun EfiToolScreen() {
 
     fun addLog(msg: String) {
         logs += "$msg\n"
+    }
+
+    // Folder picker launcher for EFI selection
+    val folderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val resolvedPath = resolveFolderPathFromUri(uri)
+            sourceEfiPath = resolvedPath
+            addLog("[+] Đã chọn thư mục EFI: $resolvedPath")
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -65,7 +99,7 @@ fun EfiToolScreen() {
         if (granted) {
             addLog("[✓] Đã phát hiện và cấp quyền Root thành công!")
         } else {
-            addLog("[!] Chưa có quyền Root. Vui lòng bấm nút 'Yêu cầu Root'.")
+            addLog("[!] Chưa có quyền Root. Vui lòng bấm nút 'Xin Root'.")
         }
     }
 
@@ -142,7 +176,7 @@ fun EfiToolScreen() {
                 }
             }
 
-            // Step 1: Scan USB Partitions
+            // Step 1: Scan USB Partitions & Dropdown Selection
             Card(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -164,7 +198,10 @@ fun EfiToolScreen() {
                                 if (list.isNotEmpty()) {
                                     val probable = list.firstOrNull { it.isProbableEfi } ?: list.first()
                                     selectedPartition = probable.devPath
-                                    addLog("[*] Đã tự động chọn phân vùng: ${probable.devPath}")
+                                    isPartitionDropdownExpanded = true
+                                    addLog("[*] Đã phát hiện ${list.size} phân vùng. Tự động chọn: ${probable.devPath}")
+                                } else {
+                                    addLog("[!] Không tìm thấy phân vùng USB nào.")
                                 }
                                 isProcessing = false
                             }
@@ -175,43 +212,82 @@ fun EfiToolScreen() {
                         Text("Quét Các Phân Vùng USB OTG")
                     }
 
-                    if (detectedPartitions.isNotEmpty()) {
-                        Text("Các phân vùng phát hiện được:", fontSize = 13.sp, color = Color.Gray)
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            detectedPartitions.forEach { part ->
-                                val isSelected = selectedPartition == part.devPath
-                                Surface(
-                                    onClick = { selectedPartition = part.devPath },
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(10.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text("${part.devPath} (${part.fsType})", fontWeight = FontWeight.Medium)
-                                        if (part.label.isNotBlank()) {
-                                            Text(part.label, fontSize = 12.sp, color = Color.Cyan)
-                                        }
-                                    }
+                    // Dropdown for Partitions
+                    ExposedDropdownMenuBox(
+                        expanded = isPartitionDropdownExpanded,
+                        onExpandedChange = {
+                            if (detectedPartitions.isNotEmpty()) {
+                                isPartitionDropdownExpanded = !isPartitionDropdownExpanded
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = selectedPartition,
+                            onValueChange = { selectedPartition = it },
+                            label = { Text("Phân vùng USB (Dropdown)") },
+                            supportingText = {
+                                if (detectedPartitions.isNotEmpty()) {
+                                    Text("Bấm vào để chọn từ ${detectedPartitions.size} phân vùng đã quét được")
+                                } else {
+                                    Text("Quét USB hoặc nhập thủ công (vd: /dev/block/sda1)")
                                 }
+                            },
+                            trailingIcon = {
+                                if (detectedPartitions.isNotEmpty()) {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = isPartitionDropdownExpanded)
+                                }
+                            },
+                            modifier = Modifier
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
+                                .fillMaxWidth()
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = isPartitionDropdownExpanded,
+                            onDismissRequest = { isPartitionDropdownExpanded = false }
+                        ) {
+                            detectedPartitions.forEach { part ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(part.devPath, fontWeight = FontWeight.Bold)
+                                                Spacer(Modifier.width(8.dp))
+                                                Text("(${part.fsType})", color = Color.Gray, fontSize = 12.sp)
+                                                if (part.isProbableEfi) {
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Surface(
+                                                        shape = RoundedCornerShape(4.dp),
+                                                        color = Color(0xFF1B5E20)
+                                                    ) {
+                                                        Text(
+                                                            " EFI ",
+                                                            color = Color.White,
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            if (part.label.isNotBlank()) {
+                                                Text("Label: ${part.label}", fontSize = 12.sp, color = Color.Cyan)
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedPartition = part.devPath
+                                        isPartitionDropdownExpanded = false
+                                        addLog("[*] Đã chọn phân vùng: ${part.devPath}")
+                                    }
+                                )
                             }
                         }
                     }
-
-                    OutlinedTextField(
-                        value = selectedPartition,
-                        onValueChange = { selectedPartition = it },
-                        label = { Text("Đường dẫn phân vùng USB (khuyên dùng /dev/block/sda1)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
                 }
             }
 
-            // Step 2: Source EFI
+            // Step 2: Source EFI Selection
             Card(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -222,26 +298,44 @@ fun EfiToolScreen() {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("2. Thư Mục EFI Nguồn", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("2. Chọn Thư Mục EFI Nguồn", fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
                     OutlinedTextField(
                         value = sourceEfiPath,
                         onValueChange = { sourceEfiPath = it },
-                        label = { Text("Đường dẫn thư mục EFI trên máy") },
+                        label = { Text("Đường dẫn thư mục EFI") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
 
+                    // Button to open Android System Folder Picker
+                    Button(
+                        onClick = {
+                            folderPickerLauncher.launch(null)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📁 Chọn Thư Mục EFI Từ Bộ Nhớ...")
+                    }
+
+                    Text("Gợi ý đường dẫn nhanh:", fontSize = 12.sp, color = Color.Gray)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         SuggestionChip(
-                            onClick = { sourceEfiPath = "/sdcard/Download/EFI" },
+                            onClick = {
+                                sourceEfiPath = "/sdcard/Download/EFI"
+                                addLog("[*] Đã chọn đường dẫn: /sdcard/Download/EFI")
+                            },
                             label = { Text("/Download/EFI") }
                         )
                         SuggestionChip(
-                            onClick = { sourceEfiPath = "/sdcard/EFI" },
+                            onClick = {
+                                sourceEfiPath = "/sdcard/EFI"
+                                addLog("[*] Đã chọn đường dẫn: /sdcard/EFI")
+                            },
                             label = { Text("/sdcard/EFI") }
                         )
                     }
