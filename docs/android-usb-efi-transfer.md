@@ -28,7 +28,26 @@ Tài liệu này hướng dẫn cách sử dụng điện thoại/máy tính b�
 
 ---
 
-## Cách 2: Sử Dụng Script Tự Động Với Root (Termux / Root Shell)
+## Cách 2: Sử Dụng App Android Đi Kèm Trong Repo (Giao Diện Trực Quan)
+
+Trong thư mục `android/` của repository đã có sẵn dự án Android app hoàn chỉnh (**Lenovo M720q EFI Tool**):
+- **Tính năng**:
+  - Tự động kiểm tra và hỏi xin quyền **Root** (tương thích Magisk, KernelSU, APatch).
+  - Tự động dò quét các phân vùng USB OTG và gợi ý phân vùng EFI FAT32.
+  - Hỗ trợ chọn đường dẫn thư mục EFI nguồn.
+  - Nút bấm tự động 1-Click: **Mount ➔ Copy EFI (có backup) ➔ Sync & Unmount an toàn**.
+  - Màn hình Console hiển thị chi tiết log thời gian thực.
+- **Biên dịch & cài đặt**:
+  ```bash
+  cd android
+  ./gradlew assembleDebug
+  adb install -r app/build/outputs/apk/debug/app-debug.apk
+  ```
+  Hoặc mở thư mục `android` trực tiếp trong **Android Studio** và bấm **Run**.
+
+---
+
+## Cách 3: Sử Dụng Script Tự Động Với Root (Termux / Root Shell)
 
 Nếu máy Android của bạn đã **Root** (Magisk / KernelSU / APatch), bạn có thể dùng script tự động đi kèm trong repo này.
 

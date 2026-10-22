@@ -79,5 +79,6 @@ Hard-disk Pre Delay - Disabled
 ## Android OTG Tools
 
 If you need to copy or update the EFI on a USB drive directly from an Android device without a computer:
+- Android App (Jetpack Compose + Root): [`android/`](android/) - GUI tool with Root permissions to scan USB partitions, mount, copy EFI and unmount safely.
 - Detailed guide: [Android USB EFI Transfer Guide](docs/android-usb-efi-transfer.md)
 - Root/Termux script: [`tools/android-efi-transfer.sh`](tools/android-efi-transfer.sh)
