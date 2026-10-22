@@ -28,15 +28,20 @@ Tài liệu này hướng dẫn cách sử dụng điện thoại/máy tính b�
 
 ---
 
-## Cách 2: Sử Dụng App Android Đi Kèm Trong Repo (Giao Diện Trực Quan)
+## Cách 2: Sử Dụng App Android Đi Kèm Trong Repo (Giao Diện Trực Quan, Hỗ Trợ Cả 2 Chế Độ)
 
 Trong thư mục `android/` của repository đã có sẵn dự án Android app hoàn chỉnh (**Lenovo M720q EFI Tool**):
-- **Tính năng**:
-  - Tự động kiểm tra và hỏi xin quyền **Root** (tương thích Magisk, KernelSU, APatch).
-  - Tự động dò quét các phân vùng USB OTG và gợi ý phân vùng EFI FAT32.
-  - Hỗ trợ chọn đường dẫn thư mục EFI nguồn.
-  - Nút bấm tự động 1-Click: **Mount ➔ Copy EFI (có backup) ➔ Sync & Unmount an toàn**.
-  - Màn hình Console hiển thị chi tiết log thời gian thực.
+- **Hỗ trợ 2 chế độ linh hoạt**:
+  - **⚡ Chế độ Root (Root Mode)**:
+    - Tự động kiểm tra và hỏi xin quyền Root (Magisk, KernelSU, APatch).
+    - Tự động dò quét các phân vùng block (`/dev/block/sd*`) qua lệnh `blkid`.
+    - Chọn phân vùng tiện lợi qua menu Dropdown và mount trực tiếp phân vùng EFI ẩn/GPT.
+    - Quy trình 1-Click: **Mount ➔ Copy EFI (tự động backup bản cũ) ➔ Sync & Unmount an toàn**.
+  - **📁 Chế độ Không Cần Root (Non-Root SAF)**:
+    - Không cần root máy hay can thiệp hệ thống.
+    - Dùng bộ chọn hệ thống (Storage Access Framework) để chọn thư mục EFI nguồn và ổ USB OTG đích.
+    - Copy an toàn các tệp EFI và flush trực tiếp vào USB.
+- **Màn hình Console**: Hiển thị log thời gian thực chi tiết từng tệp được sao chép.
 - **Biên dịch & cài đặt**:
   ```bash
   cd android
