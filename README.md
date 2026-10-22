@@ -75,3 +75,9 @@ Hard-disk Pre Delay - Disabled
 ## Notes
 
 - WiFi will be shown as Ethernet Interface. Joining networks requires [HeliPort](https://github.com/OpenIntelWireless/HeliPort).
+
+## Android OTG Tools
+
+If you need to copy or update the EFI on a USB drive directly from an Android device without a computer:
+- Detailed guide: [Android USB EFI Transfer Guide](docs/android-usb-efi-transfer.md)
+- Root/Termux script: [`tools/android-efi-transfer.sh`](tools/android-efi-transfer.sh)
