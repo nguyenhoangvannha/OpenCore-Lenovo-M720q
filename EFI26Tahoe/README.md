@@ -32,4 +32,8 @@ Bộ cấu hình OpenCore này được xây dựng chuyên biệt để đưa c
 3. **Reset NVRAM:**
    - Khởi động lại máy, chọn **Reset NVRAM** tại màn hình boot OpenCore để hệ thống cập nhật SMBIOS `iMac20,1` mới.
 4. **Cập nhật hệ điều hành:**
-   - Tải bộ cài macOS 26 Tahoe và tiến hành nâng cấp.
+   - Tải bộ cài macOS 26 Tahoe và tiến hành trích xuất:
+     ```bash
+     sudo installer -pkg /path/to/InstallAssistant.pkg -target /
+     ```
+   - Mở ứng dụng **Install macOS Tahoe.app** trong thư mục Applications để bắt đầu nâng cấp.

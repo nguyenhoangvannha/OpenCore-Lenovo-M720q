@@ -11,6 +11,8 @@
 
 ## Installation
 
+For a step-by-step walkthrough, see the [Hackintosh Installation Guide](docs/installation-guide.md).
+
 > [!IMPORTANT]  
 > This repository ships without kexts except for `UTBMap`. Run `./download-kexts.sh` to download them before using the EFI.
 
@@ -76,9 +78,10 @@ Hard-disk Pre Delay - Disabled
 
 - WiFi will be shown as Ethernet Interface. Joining networks requires [HeliPort](https://github.com/OpenIntelWireless/HeliPort).
 
-## Android OTG Tools
+## Tools & Utilities
 
-If you need to copy or update the EFI on a USB drive directly from an Android device without a computer:
-- Android App (Jetpack Compose + Root): [`android/`](android/) - GUI tool with Root permissions to scan USB partitions, mount, copy EFI and unmount safely.
-- Detailed guide: [Android USB EFI Transfer Guide](docs/android-usb-efi-transfer.md)
-- Root/Termux script: [`tools/android-efi-transfer.sh`](tools/android-efi-transfer.sh)
+- **MountEFI**: [`tools/MountEFI/`](tools/MountEFI/) - Python & Automator Quick Action tool by CorpNewt to mount EFI partitions on macOS.
+- **Android OTG Tools**:
+  - Android App (Jetpack Compose + Root): [`android/`](android/) - GUI tool with Root permissions to scan USB partitions, mount, copy EFI and unmount safely.
+  - Detailed guide: [Android USB EFI Transfer Guide](docs/android-usb-efi-transfer.md)
+  - Root/Termux script: [`tools/android-efi-transfer.sh`](tools/android-efi-transfer.sh)
