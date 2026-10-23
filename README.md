@@ -1,87 +1,110 @@
-# OpenCore - Lenovo M720Q Tiny
+# OpenCore - Lenovo ThinkCentre M720q / M920q Tiny
 
-<!-- <p align="center"> -->
-<!--     <img height="auto" width="auto" src="images/screenshot.png" /> -->
-<!-- </p> -->
+Bộ cấu hình OpenCore hoàn chỉnh dành cho máy tính tí hon **Lenovo ThinkCentre M720q / M920q Tiny** (Intel Coffee Lake Gen 8 / Gen 9), tương thích tối ưu với **macOS 15 Sequoia** và hỗ trợ card mạng Intel Wi-Fi / Bluetooth.
 
-## Configuration for macOS 15 Sequoia
+---
 
-> [!CAUTION]
-> I don't take any responsibility for you voilating the Apple ToS and/or damaging your device.
+## 📌 Tổng quan cấu hình Active (`EFI/`)
 
-## Installation
+Bản EFI chính thức tại thư mục gốc **[`EFI/`](EFI/)** được kế thừa từ bản kiểm nghiệm thực tế `EFI15Base14_BTFix`:
+* **OpenCore**: Phiên bản 1.0.8 (RELEASE)
+* **Giao diện Boot (GUI)**: Theme đồ họa **OpenCanopy GoldenGate** chuẩn Apple, hiển thị icon trực quan.
+* **Bluetooth Audio Fix**: Đã xử lý triệt để lỗi Bluetooth chớp tắt/tự ngắt khi kết nối tai nghe/loa Bluetooth trên các dòng card Intel Wi-Fi (như AC 7260, AX200, AX210) nhờ cờ boot-arg `-btlfxallowanyaddr` và tối ưu thứ tự nạp kext Bluetooth.
+* **USB Mapping**: Đã map cổng chuẩn xác bằng `USBToolBox.kext` + `UTBMap.kext` chuyên biệt cho ThinkCentre Tiny.
 
-For a step-by-step walkthrough, see the [Hackintosh Installation Guide](docs/installation-guide.md).
+---
 
-> [!IMPORTANT]  
-> This repository ships without kexts except for `UTBMap`. Run `./download-kexts.sh` to download them before using the EFI.
+## 💻 Cấu hình phần cứng (Hardware Specs)
 
-```
-PlatformInfo -> Generic -> Add Serial, SystemUUID and MLB for SMBIOS Macmini8,1
-```
+| Linh kiện | Thông số chi tiết | Trạng thái macOS |
+| :--- | :--- | :--- |
+| **CPU** | Intel Core i3-8100T / i5-8500T / i7-8700T (Coffee Lake) | Hoạt động hoàn hảo |
+| **iGPU** | Intel UHD Graphics 630 (DisplayPort / HDMI) | Nhận full qe/ci acceleration |
+| **Audio** | Realtek ALC235 (alcid=13) qua jack tai nghe 3.5mm & loa tích hợp | Hoạt động hoàn hảo |
+| **Ethernet** | Intel I219-V Gigabit Ethernet (`IntelMausi.kext`) | Hoạt động hoàn hảo |
+| **Wi-Fi** | Intel Wireless (`itlwm.kext` + HeliPort) | Hoạt động (hiển thị như Ethernet) |
+| **Bluetooth** | Intel Bluetooth (`IntelBluetoothFirmware` + `BlueToolFixup`) | Hoạt động ổn định |
+| **NVMe** | M.2 NVMe SSD (`NVMeFix.kext`) | Quản lý nguồn & tốc độ chuẩn |
 
-## Updating Kexts
+---
 
-Run the update script to download the latest kexts from their respective GitHub releases:
+## ⚙️ Thiết lập BIOS khuyến nghị (Recommended BIOS Settings)
 
-```bash
-./download-kexts.sh
-```
+Trước khi khởi động bằng EFI này, hãy đảm bảo các mục BIOS sau đã được cài đặt:
 
-This will update the following kexts:
-
-| Kext | Source |
-|------|--------|
-| Lilu | [acidanthera/Lilu](https://github.com/acidanthera/Lilu) |
-| VirtualSMC | [acidanthera/VirtualSMC](https://github.com/acidanthera/VirtualSMC) |
-| AppleALC | [acidanthera/AppleALC](https://github.com/acidanthera/AppleALC) |
-| WhateverGreen | [acidanthera/WhateverGreen](https://github.com/acidanthera/WhateverGreen) |
-| IntelMausi | [acidanthera/IntelMausi](https://github.com/acidanthera/IntelMausi) |
-| NVMeFix | [acidanthera/NVMeFix](https://github.com/acidanthera/NVMeFix) |
-| IntelBluetoothFirmware | [OpenIntelWireless/IntelBluetoothFirmware](https://github.com/OpenIntelWireless/IntelBluetoothFirmware) |
-| IntelBTPatcher | [OpenIntelWireless/IntelBluetoothFirmware](https://github.com/OpenIntelWireless/IntelBluetoothFirmware) |
-| BlueToolFixup | [OpenIntelWireless/IntelBluetoothFirmware](https://github.com/OpenIntelWireless/IntelBluetoothFirmware) |
-| itlwm | [OpenIntelWireless/itlwm](https://github.com/OpenIntelWireless/itlwm) |
-| USBToolBox | [USBToolBox/kext](https://github.com/USBToolBox/kext) |
-
-> [!NOTE]
-> `UTBMap.kext` is machine-specific and will not be updated by the script.
-
-## Base Specs
-
-- CPU: i3-8100T
-- GPU: Intel HD630 (DP, HDMI)
-- Motherboard: Intel B360
-- Audio Codec: ALC235
-- WiFi & Bluetooth: Intel AX210
-
-## BIOS
-
-```md
-Secure Boot - Disabed
-Serial Port - Disabled
-USB Support - Enabled
-USB Legacy Support - Disabled
-USB Enumeration Delay - Disabled
-Front USB Ports , Rear USB Ports - Enabled
-SATA Controller - Enabled
-Configure SATA as - AHCI
-Hard-disk Pre Delay - Disabled
+```text
+Security:
+  - Secure Boot: Disabled
+  
+Devices:
+  - Serial Port: Disabled
+  - USB Setup:
+      - USB Support: Enabled
+      - USB Legacy Support: Disabled
+      - USB Enumeration Delay: Disabled
+      - Front / Rear USB Ports: Enabled
+  - ATA Drive Setup:
+      - SATA Controller: Enabled
+      - Configure SATA as: AHCI
+      - Hard-disk Pre Delay: Disabled
 ```
 
-## Limitations 
+---
 
-- No AirDrop support due to Intel WiFi (can be fixed by using _BCM_ card and _OCLP_).
-- No compatibility for software that requires T2 chip. Such as Apple Inteligence, iPhone Mirroring etc.
+## 🚀 Hướng dẫn cài đặt & Sử dụng
 
-## Notes
+1. **Mount phân vùng EFI trên ổ cứng hoặc USB:**
+   * Sử dụng công cụ có sẵn trong repository:
+     ```bash
+     cd tools/MountEFI && python3 MountEFI.command
+     ```
+2. **Sao chép thư mục `EFI`:**
+   * Copy toàn bộ thư mục **`EFI`** ở thư mục gốc của repo này vào phân vùng EFI vừa mount.
+3. **Thêm thông tin SMBIOS (Serial / UUID):**
+   * Mở file `EFI/OC/config.plist` bằng *OCAuxiliaryTools* hoặc *ProperTree*.
+   * Đi tới mục `PlatformInfo` -> `Generic` và tạo mới các thông số `SystemSerialNumber`, `SystemUUID`, `MLB` (SMBIOS mẫu: `Macmini8,1` hoặc `iMac19,1`).
+4. **Khởi động và đặt phân vùng mặc định:**
+   * Khi màn hình menu boot OpenCore hiển thị (giao diện GoldenGate), dùng phím mũi tên chuyển đến icon **macOS** và bấm tổ hợp phím **`Ctrl + Enter`** một lần để lưu làm mặc định. Máy sẽ tự động đếm ngược 5 giây và vào thẳng hệ thống.
 
-- WiFi will be shown as Ethernet Interface. Joining networks requires [HeliPort](https://github.com/OpenIntelWireless/HeliPort).
+---
 
-## Tools & Utilities
+## 📂 Cấu trúc Repository
 
-- **MountEFI**: [`tools/MountEFI/`](tools/MountEFI/) - Python & Automator Quick Action tool by CorpNewt to mount EFI partitions on macOS.
-- **Android OTG Tools**:
-  - Android App (Jetpack Compose + Root): [`android/`](android/) - GUI tool with Root permissions to scan USB partitions, mount, copy EFI and unmount safely.
-  - Detailed guide: [Android USB EFI Transfer Guide](docs/android-usb-efi-transfer.md)
-  - Root/Termux script: [`tools/android-efi-transfer.sh`](tools/android-efi-transfer.sh)
+```text
+OpenCore-Lenovo-M720q/
+├── EFI/                  # Bản EFI chính thức đang hoạt động ổn định nhất
+│   ├── BOOT/             # BOOTx64.efi
+│   └── OC/               # OpenCore.efi, config.plist, ACPI, Drivers, Kexts, Resources
+├── variants/             # Lưu trữ các biến thể & bản build tham khảo
+│   ├── EFI_Upstream_Fork/# Bản gốc từ repository upstream fork
+│   ├── EFI15Base14/      # Bản thử nghiệm Sequoia ban đầu
+│   ├── EFI15Base14_AX200_AX210/ # Bản tinh chỉnh riêng cho AX200 / AX210
+│   ├── EFI15Base14_BTFix/# Bản gốc lưu vết fix Bluetooth
+│   └── EFI26Tahoe/       # Bản thử nghiệm macOS 26 Tahoe
+├── docs/                 # Tài liệu hướng dẫn cài đặt & kinh nghiệm
+├── tools/                # Công cụ MountEFI & script hỗ trợ
+├── android/              # Ứng dụng Android OTG USB Transfer (dành cho cấp cứu EFI)
+└── reference/            # Báo cáo phần cứng & cấu hình M920Q tham khảo
+```
+
+---
+
+## 🛠 Công cụ hỗ trợ độc quyền (Tools & Utilities)
+
+* **MountEFI**: [`tools/MountEFI/`](tools/MountEFI/) - Công cụ mount nhanh phân vùng EFI trên macOS.
+* **Android OTG Tools**:
+  * Ứng dụng Android (Jetpack Compose + Root): [`android/`](android/) - Ứng dụng sao chép trực tiếp EFI sang USB qua cổng OTG điện thoại khi gặp sự cố không vào được macOS.
+  * Hướng dẫn chi tiết: [Android USB EFI Transfer Guide](docs/android-usb-efi-transfer.md).
+
+---
+
+## ⚠️ Lưu ý & Giới hạn (Limitations)
+
+* **AirDrop / Continuity**: Không hỗ trợ trực tiếp qua Intel Wi-Fi (cần thay card Broadcom BCM94360NG nếu muốn dùng native AirDrop/Sidecar).
+* **Quản lý Wi-Fi**: Cần cài ứng dụng **[HeliPort](https://github.com/OpenIntelWireless/HeliPort)** trên macOS để kết nối mạng Wi-Fi thông qua `itlwm.kext`.
+
+---
+
+## 📄 License & Disclaimer
+
+Dự án này được chia sẻ cho mục đích nghiên cứu và học tập. Toàn bộ kext và driver thuộc bản quyền của các tác giả thuộc đội ngũ **Acidanthera**, **OpenIntelWireless** và cộng đồng Hackintosh thế giới.
