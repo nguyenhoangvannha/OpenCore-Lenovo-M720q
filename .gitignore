@@ -5,3 +5,4 @@
 # Kexts (downloaded via update-kexts.sh)
 EFI/OC/Kexts/*
 !EFI/OC/Kexts/UTBMap.kext
+/tools/MountEFI/Scripts/__pycache__
