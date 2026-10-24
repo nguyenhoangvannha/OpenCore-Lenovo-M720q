@@ -267,10 +267,6 @@
 			</dict>
 			<key>PciRoot(0x0)/Pci(0x2,0x0)</key>
 			<dict>
-				<key>#framebuffer-unifiedmem</key>
-				<data>
-				AAAAgA==
-				</data>
 				<key>AAPL,ig-platform-id</key>
 				<data>
 				BwCbPg==
@@ -351,6 +347,10 @@
 				<string>onboard-1</string>
 				<key>model</key>
 				<string>Intel UHD Graphics 630</string>
+				<key>framebuffer-unifiedmem</key>
+				<data>
+				AAAAgA==
+				</data>
 			</dict>
 		</dict>
 		<key>Delete</key>
@@ -656,7 +656,7 @@
 				<key>Comment</key>
 				<string>V2.4.0 - Disabled to prevent bluetoothd crash on legacy Intel 7260</string>
 				<key>Enabled</key>
-				<false/>
+				<true/>
 				<key>ExecutablePath</key>
 				<string>Contents/MacOS/IntelBTPatcher</string>
 				<key>MaxKernel</key>
